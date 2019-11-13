@@ -1,27 +1,38 @@
 const router = require('express').Router();
-// import Generic route handler functions
-const { 
-    getPosts,
-    createPost,
-    getPost,
-    updatePost,
-    removePost,
-    removePosts
-} 
-= require('../controllers/routeHandlers/postsRoutesHandlers');
 
-// import route access authorization and restriction functions
+// route access authorization and restriction functions
 const protectRoute = require('../controllers/authHandlers/routeAuthorizer');
-const restrictTo = require('../controllers/authHandlers/restrict');
+const preventAccessTo = require('../controllers/authHandlers/restrict');
+const commentRoutes = require('./commentsRoutes');
 
-router.route('/')
-    .get(getPosts) // get all posts
-    .post(protectRoute, restrictTo('consumer'),createPost) // add a post
-    .delete(protectRoute, restrictTo('consumer'), removePosts) // remove all posts restrict to normal user
+// routes handlers
+const {
+  getPosts,
+  createPost,
+  getPost,
+  updatePost,
+  removePost,
+  removePosts
+} = require('../controllers/routeHandlers/postsRoutesHandlers');
 
-router.route('/:postId')
-    .get(getPost) // get a specific post
-    .patch(protectRoute, restrictTo('consumer'), updatePost) // update a specific post
-    .delete(protectRoute, restrictTo('consumer'), removePost) // remove a specific post
-    
+router.use('/:postId/comments', commentRoutes);
+
+router
+  .route('/')
+  // get all posts
+  .get(getPosts)
+  // create or add a post
+  .post(protectRoute, preventAccessTo('user'), createPost)
+  // remove all posts restrict to normal user
+  .delete(protectRoute, preventAccessTo('user'), removePosts);
+
+router
+  .route('/:postId')
+  // get a specific post by its id
+  .get(getPost)
+  // update a specific post by its id
+  .patch(protectRoute, preventAccessTo('user'), updatePost)
+  // remove a specific postby its id
+  .delete(protectRoute, preventAccessTo('user'), removePost);
+
 module.exports = router;

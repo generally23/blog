@@ -1,21 +1,17 @@
-const ApplicationError = require('../errorHandlers/AppError');
+const ApplicationError = require('../utils/AppError');
 
 exports.HandleDbCastError = err => {
-    return new ApplicationError(`The value ${err.value} is an invalid ${err.path}`)
-}
+  return new ApplicationError(
+    `The value ${err.value} is an invalid ${err.path}`
+  );
+};
 
-exports.HandleDbValidationError = ({ errors }) => {
-    console.log(errors)
-    const message = Object.values(errors).map(field => {
+exports.HandleDbValidationError = (err) => {
+  return new ApplicationError(err);
+};
 
-    }).join('')
-    return new ApplicationError(message)
-}
-
-exports.HandleDbDuplicateKeyError = (err) => {
-    console.log(err);
-}
-
-
+exports.HandleDbDuplicateKeyError = err => {
+  return new ApplicationError(err)
+};
 
 module.exports = exports;
