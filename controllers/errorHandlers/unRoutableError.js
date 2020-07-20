@@ -1,4 +1,4 @@
-const ApplicationError = require('../utils/AppError');
+const ApplicationError = require("../../utils/AppError");
 
 const handleUnexistingRoute = (req, res, next) => {
   next(

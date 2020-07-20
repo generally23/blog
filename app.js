@@ -13,11 +13,10 @@ const unExistingRouteHandler = require("./controllers/errorHandlers/unRoutableEr
 // Route modules
 const postsRoutes = require("./routes/postsRoutes");
 const usersRoutes = require("./routes/usersRoutes");
-const commentRoutes = require("./routes/commentsRoutes");
 
 // constants
-const PORT = process.env.PORT || 5000;
-const DB_URL = process.env.DB_URL || 'mongodb://localhost/blog';
+const PORT = process.env.PORT || 80;
+const DB_URL = process.env.DB_URL || "mongodb://localhost/blog";
 
 // initialize application
 const app = express();
@@ -27,25 +26,24 @@ mongoose
   .connect(DB_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    useCreateIndex: true
+    useCreateIndex: true,
   })
   .then(console.log("Successfully Connected to Database!"))
-  .catch(error => console.log("Connection to Database Failed!\n", error));
+  .catch((error) => console.log("Connection to Database Failed!\n", error));
 
 // implement cors
 app.use(cors());
 
 // set up express middleware to parse JSON and serve static files
 app.use(express.json());
-
 app.use(express.static(join(__dirname, "public")));
-
+// set pug as the biew engine
 app.set("view engine", "pug");
-
 // Do not rely on express default view finding inside the views folder
-app.set("views", join(__dirname, "public"));
+app.set("views", join(__dirname, "views"));
 
 // Handle routes
+app.use(require("./routes/index"));
 app.use("/blog/v1/posts", postsRoutes);
 app.use("/blog/v1/accounts", usersRoutes);
 
@@ -59,3 +57,7 @@ app.use(globalErrorHandler);
 app.listen(PORT, () => {
   console.log(`Server Listening On Port: ${PORT}`);
 });
+
+const json = require("./posts.json");
+
+console.clear();

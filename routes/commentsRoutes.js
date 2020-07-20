@@ -12,17 +12,17 @@ const {
   deleteCommentReply,
   deleteComment,
   updateComment
-} = require('../controllers/routeHandlers/commentRouteHandlers');
+} = require('../controllers/routeHandlers/commentsRouteHandlers');
 
 router
   // blog/v1/posts/:postId/comments
-  .route('/') 
+  .route('/')
   // get all comments for a specific post
   .get(getComments)
   // add a comment for a specific post
   .post(protectRoute, createComment)
-  // delete all cmments, only logged in administrators are allowed
-  .delete(protectRoute, preventAccessTo('user'), deleteComments);
+  // delete all comments, only logged in administrators are allowed
+  .delete(protectRoute, preventAccessTo('User'), deleteComments);
 
 router
   // blog/v1/posts/:postId/comments/:commentId

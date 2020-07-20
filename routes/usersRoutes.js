@@ -14,7 +14,7 @@ const {
   forgotPassword,
   deleteAccount,
   resetPassword
-} = require('../controllers/routeHandlers/userRouteHandlers');
+} = require('../controllers/routeHandlers/usersRouteHandlers');
 
 // get all user accounts
 router

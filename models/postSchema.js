@@ -10,34 +10,29 @@ const postSchema = new Schema(
       required: true,
       unique: true
     },
+    poster: {
+      type: String
+    },
     summary: {
       type: String,
       required: true,
       unique: true,
-      minlength: 100,
       maxlength: 300
-    },
-    cover: {
-      type: String,
-      default: '' // some cover image
     },
     content: {
       type: String,
-      required: true
-    },
-    slug: {
-      type: String,
-      maxlength: 100,
-      lowercase: true,
-      default: function() {
-        return slugify(this.title);
-      },
       required: true,
       unique: true
     },
-    reviews: [reviewSchema], // Embeded,
-    tags: [String], // Embeded
-    author: {
+    slug: {
+      type: String,
+      lowercase: true,
+      required: true,
+      unique: true
+    },
+    //reviews: [reviewSchema], // Embeded,
+    //tags: [String], // Embeded
+    authorId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true
@@ -57,7 +52,7 @@ postSchema.virtual('virtualAuthor', {
 
 // remove all comments on this post when deleted
 postSchema.pre('remove', function(next) {
-  Comment.deleteMany({ post: this._id });
+  Comment.deleteMany({ postId: this._id });
   next();
 });
 

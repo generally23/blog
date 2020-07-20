@@ -10,18 +10,18 @@ const userSchema = new Schema(
       type: String,
       unique: true,
       required: true,
-      maxlength: 50,
+      maxlength: 15,
       minlength: 5
     },
     email: {
       type: String,
-      required: true,
+      required: [true, 'You must register with an email'],
       unique: true
     },
     role: {
       type: String,
-      enum: ['admin', 'user'],
-      default: 'user'
+      enum: ['Admin', 'User'],
+      default: 'User'
     },
     isActive: {
       type: Boolean,
@@ -30,14 +30,15 @@ const userSchema = new Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: [true, 'You must create a password to create an account'],
       select: false,
       unique: true,
-      minlength: 8
+      minlength: [8, 'Your password must be at least 8 characters long'],
+      maxlength: [32, 'Your password must be at most 32 characters long']
     },
     confirmedPassword: {
       type: String,
-      required: true,
+      required: [true, 'You must confirm your password to make sure you rember it'],
       unique: true,
       validate: {
         validator(value) {
@@ -45,7 +46,8 @@ const userSchema = new Schema(
         }
       },
       select: false,
-      minlength: 8
+      minlength: [8, 'Your password must be at least 8 characters long'],
+      maxlength: [32, 'Your password must be at most 32 characters long']
     },
     passwordChangeTime: {
       type: Date,
@@ -72,17 +74,17 @@ userSchema.pre('save', async function(next) {
   next();
 });
 
-// remove all user posts if deleted
+// remove all user data when user is removed
 userSchema.pre('remove', async function(next) {
-  await Post.deleteMany({ author: this._id });
+  const authorId = this._id;
+  // all posts
+  await Post.deleteMany({ authorId });
+  // all coments
+  await Comment.deleteMany({ authorId });
   next();
 });
 
-// remove all comments if deleted
-userSchema.pre('remove', async function(next) {
-  await Comment.deleteMany({ author: this._id });
-  next();
-});
+
 
 /* MONGOOSE DOCUMENT INSTANCE METHODS */
 
@@ -92,20 +94,20 @@ userSchema.methods.verifyPassword = async (password, hashedPassword) => {
 };
 
 // check if user has changed their password after the token was issued
-userSchema.methods.updatedPasswordAfter = function(tokenIssuedDate) {
+userSchema.methods.updatedPasswordAfter = function(tokenIssuanceDate) {
   if (!this.passwordChangeTime) return false;
-  return tokenIssuedDate < this.passwordChangeTime.getTime() / 1000;
+  return tokenIssuanceDate < this.passwordChangeTime.getTime() / 1000;
 };
 
 // prevent certain properties from being leaked
-userSchema.methods.toJSON = function() {
-  return this.deleteProperties(
-    'password',
-    'confirmedPassword',
-    'isActive',
-    'passwordChangeTime'
-  );
-};
+// userSchema.methods.toJSON = function() {
+//   return this.deleteProperties(
+//     'password',
+//     'confirmedPassword',
+//     'isActive',
+//     'passwordChangeTime'
+//   );
+// };
 
 // password forgotten
 userSchema.methods.generatePasswordResetToken = function() {
@@ -116,7 +118,7 @@ userSchema.methods.generatePasswordResetToken = function() {
     .update(resetToken)
     .digest('hex')
   // set the expiration time of the token to 15min
-  this.passwordResetTokenExpiresIn = Date.now() + 15 * 60 * 1000;
+  this.passwordResetTokenExpiresIn = Date.now() + (15 * 60 * 1000);
   // return the token
   return resetToken;
 };

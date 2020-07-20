@@ -2,7 +2,7 @@ const { Schema, model } = require("mongoose");
 
 const commentSchema = new Schema(
   {
-    author: {
+    authorId: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true
@@ -15,7 +15,7 @@ const commentSchema = new Schema(
       type: Boolean,
       default: false
     },
-    post: {
+    postId: {
       type: Schema.Types.ObjectId,
       ref: "Post",
       required: true

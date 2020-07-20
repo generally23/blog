@@ -15,8 +15,6 @@ const {
   removePosts
 } = require('../controllers/routeHandlers/postsRoutesHandlers');
 
-router.use('/:postId/comments', commentRoutes);
-
 router
   .route('/')
   // get all posts
@@ -34,5 +32,7 @@ router
   .patch(protectRoute, preventAccessTo('user'), updatePost)
   // remove a specific postby its id
   .delete(protectRoute, preventAccessTo('user'), removePost);
+
+router.use('/:postId/comments', commentRoutes);
 
 module.exports = router;

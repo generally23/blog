@@ -6,7 +6,7 @@ const reviewSchema = new Schema(
       type: Number,
       min: 1,
       max: 5,
-      require: [true, 'The rating filed is required']
+      require: [true, 'The rating field is required']
     },
     author: {
       type: Schema.Types.ObjectId,
