@@ -1,8 +1,7 @@
-const Post = require("../../models/postSchema");
+const Post = require("../../schemas/post");
 const { catchAsync } = require("../../utils");
-const ApplicationResponse = require("../../utils/routeResponse");
 const ApplicationError = require("../../utils/AppError");
-const Comment = require("../../models/commentSchema");
+const Comment = require("../../schemas/comment");
 
 exports.deleteComment = catchAsync(async (req, res, next) => {
   // 1. get comment id
@@ -29,7 +28,7 @@ exports.deleteComment = catchAsync(async (req, res, next) => {
   // 6. if we make it here then comment was found and user owns it so delete comment
   await Comment.deleteOne({ _id: commentId });
   // 7. acknowledge comment deletion
-  res.json(new ApplicationResponse());
+  res.status(204).json();
 });
 
 exports.deleteComments = catchAsync(async (req, res, next) => {
@@ -38,7 +37,7 @@ exports.deleteComments = catchAsync(async (req, res, next) => {
   // 2. try to remove it
   await Comment.deleteMany({ postId });
   // acknowledge comment deletion
-  res.json(new ApplicationResponse());
+  res.status(204).json();
 });
 
 exports.deleteCommentReply = catchAsync(async (req, res, next) => {
@@ -63,12 +62,7 @@ exports.deleteCommentReply = catchAsync(async (req, res, next) => {
   // 6. try deleting the comment since user owns it
   await Comment.deleteOne({ _id: replyId });
   // 7. send acknlodgment back
-  res.json(
-    new ApplicationResponse({
-      message: "Reply was successully deleted",
-      reply: {},
-    })
-  );
+  res.status(204).json();
 });
 
 exports.deleteMyComments = catchAsync(async (req, res, next) => {
@@ -81,11 +75,7 @@ exports.deleteMyComments = catchAsync(async (req, res, next) => {
       })
     );
   }
-  res.json(
-    new ApplicationResponse({
-      message: "All of your comments on this site were successfully deleted",
-    })
-  );
+  res.status(204).json();
 });
 
 exports.getComments = catchAsync(async (req, res, next) => {
@@ -97,7 +87,7 @@ exports.getComments = catchAsync(async (req, res, next) => {
     replyTo: { $exists: false },
   }).populate("authorId");
   // 3. send the comments back
-  res.json(new ApplicationResponse({ comments, results: comments.length }));
+  res.json({ comments, results: comments.length });
 });
 
 // Comments Sub Routes Readers
@@ -107,7 +97,7 @@ exports.getCommentReplies = catchAsync(async (req, res, next) => {
   // 2. try to find the replies for this comment
   const replies = await Comment.find({ replyTo: commentId });
   // 3. send the replies back
-  res.json(new ApplicationResponse({ replies, results: replies.length }));
+  res.json({ replies, results: replies.length });
 });
 
 exports.createComment = catchAsync(async (req, res, next) => {
@@ -136,7 +126,7 @@ exports.createComment = catchAsync(async (req, res, next) => {
   // 7. save the comment to DB
   await comment.save();
   // 8. respond with the created comment
-  res.status(201).json(new ApplicationResponse({ comment }));
+  res.status(201).json({ comment });
 });
 
 // Comments Sub Routes Creators
@@ -178,7 +168,7 @@ exports.createCommentReply = catchAsync(async (req, res, next) => {
   // 8. save reply to DB
   await reply.save();
   // 9. send the reply back
-  res.status(201).json(new ApplicationResponse({ reply }));
+  res.status(201).json({ reply });
 });
 
 exports.updateComment = catchAsync(async (req, res, next) => {
@@ -203,5 +193,5 @@ exports.updateComment = catchAsync(async (req, res, next) => {
   // 6. save changes
   await comment.save();
   // 7. send acknoledgment back
-  res.json(new ApplicationResponse({ comment }));
+  res.json({ comment });
 });

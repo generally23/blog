@@ -7,12 +7,12 @@ const cors = require("cors");
 require("dotenv").config();
 
 // local packages
-const globalErrorHandler = require("./controllers/errorHandlers/globalErrorHandler");
-const unExistingRouteHandler = require("./controllers/errorHandlers/unRoutableError");
+const globalErrorHandler = require("./controllers/errorHandlers/global");
+const unExistingRouteHandler = require("./controllers/errorHandlers/unroutable");
 
 // Route modules
-const postsRoutes = require("./routes/postsRoutes");
-const usersRoutes = require("./routes/usersRoutes");
+const postsRoutes = require("./routes/posts");
+const usersRoutes = require("./routes/users");
 
 // constants
 const PORT = process.env.PORT || 80;
@@ -43,7 +43,6 @@ app.set("view engine", "pug");
 app.set("views", join(__dirname, "views"));
 
 // Handle routes
-app.use(require("./routes/index"));
 app.use("/blog/v1/posts", postsRoutes);
 app.use("/blog/v1/accounts", usersRoutes);
 
@@ -57,7 +56,5 @@ app.use(globalErrorHandler);
 app.listen(PORT, () => {
   console.log(`Server Listening On Port: ${PORT}`);
 });
-
-const json = require("./posts.json");
 
 console.clear();

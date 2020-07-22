@@ -1,5 +1,5 @@
 const { catchAsync } = require("../../utils");
-const User = require("../../models/userSchema");
+const User = require("../../schemas/user");
 const ApplicationError = require("../../utils/AppError");
 const { verify } = require("jsonwebtoken");
 

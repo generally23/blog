@@ -1,4 +1,3 @@
-const { catchAsync } = require("../../utils");
 const ApplicationError = require("../../utils/AppError");
 
 const preventAccessTo = (...roles) => {
@@ -6,7 +5,7 @@ const preventAccessTo = (...roles) => {
     if (roles.includes(req.user.role)) {
       return next(
         new ApplicationError(
-          "You are not allowed to perform these actions",
+          "You do not have enough credentials to access or perform these actions",
           403
         )
       );

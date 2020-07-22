@@ -5,35 +5,35 @@ const commentSchema = new Schema(
     authorId: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
     content: {
       type: String,
-      required: true
+      required: true,
     },
     isEdited: {
       type: Boolean,
-      default: false
+      default: false,
     },
     postId: {
       type: Schema.Types.ObjectId,
       ref: "Post",
-      required: true
+      required: true,
     },
     replyTo: {
       type: Schema.Types.ObjectId,
-      ref: 'Comment'
-    }
+      ref: "Comment",
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
 const Comment = model("Comment", commentSchema);
 
 // delete all replies if a comment is deleted
-commentSchema.pre("remove", async function(next) {
+commentSchema.pre("remove", async function (next) {
   await Comment.deleteMany({ replyTo: this._id });
   next();
 });

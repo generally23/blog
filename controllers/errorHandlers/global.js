@@ -3,7 +3,7 @@ const {
   HandleDbCastError,
   HandleDbDuplicateKeyError,
   HandleDbValidationError,
-} = require("./mongooseErrors");
+} = require("./mongoose");
 
 const sendErrorResponse = (err, res, includeField) => {
   res.status(err.statusCode).json({
@@ -14,6 +14,7 @@ const sendErrorResponse = (err, res, includeField) => {
 };
 
 const sendDevErrors = (err, res) => {
+  //console.log(err);
   // dev errors
   if (err.isOperational) {
     // operational error dev

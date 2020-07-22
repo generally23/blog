@@ -1,13 +1,10 @@
-const { paginate } = require("../../utils");
-const { validate, validateTags } = require("../../utils");
-const { catchAsync } = require("../../utils");
-const Post = require("../../models/postSchema");
-const ApplicationResponse = require("../../utils/routeResponse");
+const { catchAsync, paginate } = require("../../utils");
+const Post = require("../../schemas/post");
 const ApplicationError = require("../../utils/AppError");
 
 exports.removePosts = catchAsync(async (req, res, next) => {
   await Post.deleteMany();
-  res.json(new ApplicationResponse());
+  res.json();
 });
 
 exports.removePost = catchAsync(async (req, res, next) => {
@@ -38,15 +35,7 @@ exports.removePost = catchAsync(async (req, res, next) => {
   // 5. delete the post the post
   await Post.deleteOne({ _id: postId });
   // 6. send a message back acknowledging post delete
-  res.json(
-    new ApplicationResponse(
-      {
-        message: `Post ${post.title} successfully deleted`,
-        post: {},
-      },
-      204
-    )
-  );
+  res.status(204).json();
 });
 
 exports.getPosts = catchAsync(async (req, res, next) => {
@@ -57,7 +46,7 @@ exports.getPosts = catchAsync(async (req, res, next) => {
   const result = paginate(posts);
   console.log(result);
   // 2. respond with the posts
-  res.json(new ApplicationResponse(result));
+  res.json({ result });
 });
 
 exports.getPost = catchAsync(async (req, res, next) => {
@@ -74,29 +63,13 @@ exports.getPost = catchAsync(async (req, res, next) => {
   foundPost.populate("author", (err, data) => {
     if (err)
       return next(
-        new ApplicationResponse("Could not populate author for the post")
+        new ApplicationError("Could not populate author for the post")
       );
-    res.json(new ApplicationResponse({ post: foundPost }));
+    res.json({ post: foundPost });
   });
 });
 
 exports.createPost = catchAsync(async (req, res, next) => {
-  // // 1. collect user input from
-  // const { title, content, summary } = req.body;
-  // let { tags } = req.body;
-  // // 2. validate input
-  // if (!validate(title, content, summary, content)) {
-  //   return next(new ApplicationError('Please fill all required fields'));
-  // }
-  // // 3. validate post tags
-  // tags = validateTags(tags);
-  // if (!tags) {
-  //   return next(
-  //     new ApplicationError(
-  //       'These are invalid Tags try using names like Web Dev, NodeJS as tags for your post'
-  //     )
-  //   );
-  // }
   // 4. create and retieve the post back
   const createdPost = new Post(req.body);
   // 5. associate the post to it's auhtor
@@ -108,29 +81,7 @@ exports.createPost = catchAsync(async (req, res, next) => {
   // 6. save post to DB
   await createdPost.save();
   // 7. send it to api post author
-  res.status(201).json(new ApplicationResponse({ post: createdPost }, 201));
+  res.status(201).json({ post: createdPost }, 201);
 });
 
-exports.updatePost = catchAsync(async (req, res, next) => {
-  const { postId } = req.params;
-  const userId = req.user.id;
-  const { title, summary, content } = req.body;
-  let { tags } = req.body;
-  if (!validate(title, summary, content))
-    return next(
-      new ApplicationError("Please fill all form fields correctly", 400)
-    );
-  tags = validateTags(tags);
-  const updatedPost = await Post.updateOne(
-    { _id: postId, author: userId },
-    { $set: { title, summary, content, tags } }
-  );
-  if (!updatedPost.ok) {
-    res.json(new ApplicationResponse({ message: "Post was not updated" }));
-  }
-  res.json(
-    new ApplicationResponse({
-      post: { _id: postId, title, summary, content, tags },
-    })
-  );
-});
+exports.updatePost = catchAsync(async (req, res, next) => {});
