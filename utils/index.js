@@ -1,43 +1,61 @@
+const { sign } = require("jsonwebtoken");
+
+// delete properties from a source object
+exports.deleteProps = (src, ...props) => {
+  props.forEach((prop) => delete src[prop]);
+};
+
 // make sure all passed values are truthy
-exports.validate = (...values) => values.every(value => !!value);
+exports.validate = (...values) => values.every((value) => !!value);
 
 // async catcher. helps to avoid using try catch everywhere
-exports.catchAsync = func => {
+exports.catchAsync = (func) => {
   return (req, res, next) => {
     func(req, res, next).catch(next);
   };
 };
 
-exports.validateTags = tags => {
-  if (typeof tags === 'string') return [tags];
-  return tags.filter(tag => typeof tag === 'string' && !!tag);
+exports.validateTags = (tags) => {
+  if (typeof tags === "string") return [tags];
+  return tags.filter((tag) => typeof tag === "string" && !!tag);
 };
 
-exports.generateToken = id => sign({ id }, process.env.JWT_SECRET);
+// generate a token for a given client id
+exports.generateToken = (id) => sign({ id }, process.env.JWT_SECRET);
 
-
-const createPages = numPages => {
+// create pages array out of a number of pages
+const createPages = (numPages) => {
   let firstPage = 1;
   const pages = [];
   for (let i = firstPage; i <= numPages; i++) {
-    pages.push(i)
+    pages.push(i);
   }
   return pages;
-}
+};
 
+// pagination implementation
 exports.paginate = (items = [], currentPage = 1, resultsPerPage = 10) => {
   // default number of results per page
-  const defaultResPerPage = 10;
+  const defaultResultsPerPage = 10;
   // total number of documents
   const itemsLength = items.length;
   // first page, always 1
   const firstPage = 1;
 
   // sanitize input as currentPage and resultsPerPage could be anything given it's provided by client
-  if (!Number.isNaN(parseInt(currentPage)) || !Number.isNaN(parseInt(resultsPerPage))) {
+  if (
+    !Number.isNaN(parseInt(currentPage)) ||
+    !Number.isNaN(parseInt(resultsPerPage))
+  ) {
     currentPage = 1;
-    resultsPerPage = defaultResPerPage;
+    resultsPerPage = defaultResultsPerPage;
   }
+
+  // don't allow resultsPerpage to exceed the total number of documents we have
+  if (resultsPerPage > itemsLength) resultsPerPage = itemsLength;
+  // don't allow resultsPerpage to be less than defaultResultsPerPage for every page
+  if (resultsPerPage < defaultResultsPerPage)
+    resultsPerPage = defaultResultsPerPage;
 
   // total number of pages
   let pageLength = Math.ceil(itemsLength / resultsPerPage);
@@ -50,10 +68,6 @@ exports.paginate = (items = [], currentPage = 1, resultsPerPage = 10) => {
   // pages left to read from current page
   const pagesToRead = currentPage < lastPage ? lastPage - currentPage : 0;
 
-  // don't allow resultsPerpage to be less than default results for every page
-  if (resultsPerPage < defaultResPerPage) resultsPerPage = defaultResPerPage;
-  // don't allow resultsPerpage to exceed the total number of documents we have
-  if (resultsPerPage > itemsLength) resultsPerPage = itemsLength;
   // don't allow currentPage to be bigger than the total number of pages there are
   if (currentPage > pageLength) currentPage = pageLength;
   // don't allow currentPage to be less than firstPage which is 1
@@ -88,8 +102,20 @@ exports.paginate = (items = [], currentPage = 1, resultsPerPage = 10) => {
     pagesRead,
     pagesToRead,
     length: documentLength,
-    pages: createPages(pageLength)
+    pages: createPages(pageLength),
+  };
+};
+
+// check if two value are the same
+exports.same = (first, second) => first === second;
+
+// assign values from source to target
+exports.assign = (source, target) => {
+  for (let key in source) {
+    const value = source[key];
+    target[key] = value;
   }
-}
+  return true;
+};
 
 module.exports = exports;
