@@ -1,13 +1,13 @@
-const router = require("express").Router();
-
-const protectRoute = require("../controllers/authHandlers/route");
-const preventAcessTo = require("../controllers/authHandlers/restrict");
-
+const router = require('express').Router();
+const protectRoute = require('../controllers/authHandlers/route');
+const preventAcessTo = require('../controllers/authHandlers/restrict');
+const upload = require('../utils/avatarUploader');
 const {
   signup,
   signin,
-  getMyAccount,
   logout,
+  getMyAccount,
+  updateMyAccount,
   deleteMyAccount,
   getAccounts,
   deleteAccounts,
@@ -15,42 +15,58 @@ const {
   deleteAccount,
   resetPassword,
   changePassword,
-} = require("../controllers/routeHandlers/users");
+  updateAvatar,
+} = require('../controllers/routeHandlers/users');
 
-const USER = "User";
+const restrictedUsers = ['user'];
 
 // get all user accounts
 router
-  .route("/")
-  .get(protectRoute, preventAcessTo(USER), getAccounts)
-  .delete(protectRoute, preventAcessTo(USER), deleteAccounts);
+  .route('/')
+  .get(protectRoute, preventAcessTo(restrictedUsers), getAccounts)
+  .delete(protectRoute, preventAcessTo(restrictedUsers), deleteAccounts);
 
 // sign user up
-router.post("/signup", signup);
+router.post('/signup', signup);
 
 // sign user in
-router.post("/signin", signin);
+router.post('/signin', signin);
 
 router
-  .route("/my-account")
+  .route('/my-account')
   // get user info
   .get(protectRoute, getMyAccount)
-  // get user info
+  // update user account
+  .patch(protectRoute, updateMyAccount)
+  // delete user account
   .delete(protectRoute, deleteMyAccount);
 
 // deletes someone's account, only logged in admin can do this
-router.delete("/:accountId", protectRoute, preventAcessTo(USER), deleteAccount);
+router.delete(
+  '/:accountId',
+  protectRoute,
+  preventAcessTo(restrictedUsers),
+  deleteAccount
+);
 
 // log user out
-router.post("/logout", protectRoute, logout);
+router.post('/logout', protectRoute, logout);
 
 // forget password
-router.post("/forgot-password", forgotPassword);
+router.post('/forgot-password', forgotPassword);
 
 // reset password
-router.patch("/reset-password/:resetToken", resetPassword);
+router.patch('/reset-password/:resetToken', resetPassword);
 
 // change password
-router.patch("/change-password", protectRoute, changePassword);
+router.patch('/change-password', protectRoute, changePassword);
+
+// update user avatar
+router.patch(
+  '/update-avatar',
+  protectRoute,
+  upload.single('avatar'),
+  updateAvatar
+);
 
 module.exports = router;

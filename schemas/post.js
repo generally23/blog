@@ -1,5 +1,6 @@
-const { Schema, model } = require("mongoose");
-const Comment = require("./comment");
+const { Schema, model } = require('mongoose');
+const Comment = require('./comment');
+const { default: slugify } = require('slugify');
 
 const postSchema = new Schema(
   {
@@ -32,26 +33,42 @@ const postSchema = new Schema(
     //tags: [String], // Embeded
     authorId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
+    },
+    category: {
+      type: String,
+      lowercase: true,
+      required: true,
+      enum: ['web development', 'it upport'],
     },
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
   }
 );
 
 // middleware
-postSchema.virtual("virtualAuthor", {
-  ref: "User",
-  localField: "author",
-  foreignField: "_id",
+postSchema.virtual('virtualAuthor', {
+  ref: 'User',
+  localField: 'authorId',
+  foreignField: '_id',
+});
+
+// update slug if title changed
+postSchema.pre('save', function (next) {
+  const post = this;
+  if (post.isModified('title')) {
+    post.slug = slugify(post.title);
+  }
+  next();
 });
 
 // remove all comments on this post when deleted
-postSchema.pre("remove", function (next) {
+postSchema.pre('remove', function (next) {
   Comment.deleteMany({ postId: this._id });
   next();
 });
 
-module.exports = model("Post", postSchema);
+module.exports = model('Post', postSchema);

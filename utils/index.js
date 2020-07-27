@@ -1,30 +1,30 @@
-const { sign } = require("jsonwebtoken");
+const { sign } = require('jsonwebtoken');
 
 // delete properties from a source object
 exports.deleteProps = (src, ...props) => {
-  props.forEach((prop) => delete src[prop]);
+  props.forEach(prop => delete src[prop]);
 };
 
 // make sure all passed values are truthy
-exports.validate = (...values) => values.every((value) => !!value);
+exports.validate = (...values) => values.every(value => !!value);
 
 // async catcher. helps to avoid using try catch everywhere
-exports.catchAsync = (func) => {
+exports.catchAsync = func => {
   return (req, res, next) => {
     func(req, res, next).catch(next);
   };
 };
 
-exports.validateTags = (tags) => {
-  if (typeof tags === "string") return [tags];
-  return tags.filter((tag) => typeof tag === "string" && !!tag);
+exports.validateTags = tags => {
+  if (typeof tags === 'string') return [tags];
+  return tags.filter(tag => typeof tag === 'string' && !!tag);
 };
 
 // generate a token for a given client id
-exports.generateToken = (id) => sign({ id }, process.env.JWT_SECRET);
+exports.generateToken = id => sign({ id }, process.env.JWT_SECRET);
 
 // create pages array out of a number of pages
-const createPages = (numPages) => {
+const createPages = numPages => {
   let firstPage = 1;
   const pages = [];
   for (let i = firstPage; i <= numPages; i++) {
@@ -88,7 +88,7 @@ exports.paginate = (items = [], currentPage = 1, resultsPerPage = 10) => {
   // paged docs
   const documents = items.slice(startIdx, endIdx);
   // length of paged docs
-  const documentLength = documents.length;
+  const totalDocuments = documents.length;
   // pagination information
   return {
     firstPage,
@@ -101,8 +101,9 @@ exports.paginate = (items = [], currentPage = 1, resultsPerPage = 10) => {
     pageLength,
     pagesRead,
     pagesToRead,
-    length: documentLength,
+    totalDocuments,
     pages: createPages(pageLength),
+    resultsPerPage,
   };
 };
 
@@ -113,9 +114,21 @@ exports.same = (first, second) => first === second;
 exports.assign = (source, target) => {
   for (let key in source) {
     const value = source[key];
-    target[key] = value;
+    if (value) target[key] = value;
   }
   return true;
+};
+
+// escape function
+const escape = text => {
+  const charTable = {
+    '<': '&lt;',
+    '>': '&gt;',
+    '&': '&amp;',
+    '"': '&quote;',
+    "'": '&apos;',
+  };
+  return text.replace(/(<|>|'|"|&)/g, match => charTable[match]);
 };
 
 module.exports = exports;

@@ -1,8 +1,11 @@
-const { generateToken, catchAsync, same, assign } = require("../../utils");
-const sendMailTo = require("../authHandlers/mailer");
-const User = require("../../schemas/user");
-const ApplicationError = require("../../utils/AppError");
-const crypto = require("crypto");
+const { generateToken, catchAsync, same, assign } = require('../../utils');
+const sendMailTo = require('../authHandlers/mailer');
+const User = require('../../schemas/user');
+const ApplicationError = require('../../utils/AppError');
+const crypto = require('crypto');
+const sharp = require('sharp');
+const { resolve } = require('path');
+const { clear } = require('console');
 
 exports.deleteAccount = catchAsync(async (req, res, next) => {
   /* 
@@ -13,7 +16,7 @@ exports.deleteAccount = catchAsync(async (req, res, next) => {
   // delete the account
   await User.deleteOne({ _id: req.params.accountId });
   // respond to client
-  res.status(204).json({ m: "" });
+  res.status(204).json({ m: '' });
 });
 
 exports.deleteMyAccount = catchAsync(async (req, res, next) => {
@@ -57,11 +60,13 @@ exports.signup = catchAsync(async (req, res, next) => {
   const { secret } = req.query;
   // get input from user
   const { username, email, password, confirmedPassword } = req.body;
+  // user avatar
+  const avatar = req.file;
   // check if user already exist
   if (await User.findOne({ email })) {
     return next(
       new ApplicationError(
-        "There is already an account with these credentials. Please log in or reset your password"
+        'There is already an account with these credentials. Please log in or reset your password'
       )
     );
   }
@@ -72,9 +77,9 @@ exports.signup = catchAsync(async (req, res, next) => {
     password,
     confirmedPassword,
   });
-  // change user role to be admin if secret is verified
+  // change user role to admin if secret is verified
   if (secret && secret === process.env.ADMIN_CREATION_SECRET) {
-    user.role = "Admin";
+    user.role = 'admin';
   }
   // switch account to being active
   user.isActive = true;
@@ -95,7 +100,7 @@ exports.signin = catchAsync(async (req, res, next) => {
   if (!user) {
     return next(
       new ApplicationError(
-        "You are tying to sign in with wrong credentials. Please verify your email or password",
+        'You are tying to sign in with wrong credentials. Please verify your email or password',
         401
       )
     );
@@ -106,7 +111,7 @@ exports.signin = catchAsync(async (req, res, next) => {
   if (!isPasswordValid) {
     return next(
       new ApplicationError(
-        "Please make sure you enter the correct password",
+        'Please make sure you enter the correct password',
         401
       )
     );
@@ -135,7 +140,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   // send an error if user does'nt exist
   if (!user) {
     return next(
-      new ApplicationError("No account was found with this email address", 404)
+      new ApplicationError('No account was found with this email address', 404)
     );
   }
   // generate a reset token for this user
@@ -147,18 +152,18 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
   try {
     await sendMailTo({
-      from: "rallygene0@gmail.com",
+      from: 'rallygene0@gmail.com',
       to: email,
-      subject: "Password reset request",
+      subject: 'Password reset request',
       text: `We have received a request from you to reset your password please send a request to ${resetUrl} to reset you password`,
     });
     res.json({
-      message: "Successfully sent reset instructions to your email address",
+      message: 'Successfully sent reset instructions to your email address',
     });
   } catch (e) {
     return next(
       new ApplicationError(
-        "Unfortunately, the email failed to deliver to your email address"
+        'Unfortunately, the email failed to deliver to your email address'
       )
     );
   }
@@ -174,16 +179,16 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   if (currentPassword && newPassword && same(currentPassword, newPassword)) {
     return next(
       new ApplicationError(
-        "Your new password cannot be the same as your current password",
+        'Your new password cannot be the same as your current password',
         400
       )
     );
   }
   // hash reset token received from client
   const resetTokenHash = crypto
-    .createHash("sha256")
+    .createHash('sha256')
     .update(resetToken)
-    .digest("hex");
+    .digest('hex');
 
   // find user with hashed reset token who's time has not expired
   const user = await User.findOne({
@@ -194,23 +199,26 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   if (!user) {
     return next(
       new ApplicationError(
-        "Your reset token is either invalid or has expired",
+        'Your reset token is either invalid or has expired',
         401
       )
     );
   }
 
   // update all the information
-  assign(user, {
-    password: newPassword,
-    passwordChangeTime: Date.now(),
-    passwordResetToken: undefined,
-    passwordResetTokenExpiresIn: undefined,
-  });
+  assign(
+    {
+      password: newPassword,
+      passwordChangeTime: Date.now(),
+      passwordResetToken: undefined,
+      passwordResetTokenExpiresIn: undefined,
+    },
+    user
+  );
   // resave all changes to Database
   await user.save();
   // respond to client
-  res.json({ message: "You have successfully updated your password" });
+  res.json({ message: 'You have successfully updated your password' });
 });
 
 exports.changePassword = catchAsync(async (req, res, next) => {
@@ -220,7 +228,7 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   if (!currentPassword || !newPassword) {
     return next(
       new ApplicationError(
-        "current password and new password fields are required",
+        'current password and new password fields are required',
         401
       )
     );
@@ -236,18 +244,59 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   if (!isPasswordValid) {
     return next(
       new ApplicationError(
-        "Incorrect password. Please enter a correct one",
+        'Incorrect password. Please enter a correct one',
         401
       )
     );
   }
   // change user password and generate a new token
-  assign(user, { password: newPassword });
+  assign({ password: newPassword }, user);
   // resave changes to the Database
   await user.save();
   // respond to client
   res.json({
     message:
-      "Password successfully changed. You will soon receive a confirmation email from us",
+      'Password successfully changed. You will soon receive a confirmation email from us',
   });
+});
+
+exports.updateMyAccount = catchAsync(async (req, res, next) => {
+  // logged in user
+  const user = req.user;
+  // updatable props
+  const { email, username } = req.body;
+  // update
+  assign({ email, username }, user);
+  // save changes
+  await user.save();
+  // respond to client
+  res.json({ message: 'Your account was sucessfully updated' });
+});
+
+exports.updateAvatar = catchAsync(async (req, res, next) => {
+  // logged in user
+  const user = req.user;
+  // potentially uploaded avatar
+  const avatar = req.file;
+  // send an error if no avatar was uploaded
+  if (!avatar) {
+    return next(new ApplicationError('Please upload a file'));
+  }
+  // construct avatar url
+  const avatarUrl = `${avatar.fieldname}-${user.id}.webp`;
+  // construct path
+  const path = resolve('uploads', avatarUrl);
+  // change user avatar
+  user.avatar = avatarUrl;
+  // resize file and save it to uploads folder
+  await sharp(avatar.buffer)
+    .resize(250, 250)
+    .webp({ quality: 50 })
+    .toFile(path);
+  // resave avatar change to DB
+  await user.save();
+  // set content type to webp
+  res.setHeader('content-type', 'image/webp');
+  // respond to client with uploaded image
+  res.send(avatar.buffer);
 });

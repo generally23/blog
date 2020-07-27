@@ -1,6 +1,71 @@
-const { catchAsync, paginate } = require("../../utils");
-const Post = require("../../schemas/post");
-const ApplicationError = require("../../utils/AppError");
+const { catchAsync, paginate, assign } = require('../../utils');
+const Post = require('../../schemas/post');
+const ApplicationError = require('../../utils/AppError');
+const { default: slugify } = require('slugify');
+
+exports.getPosts = catchAsync(async (req, res, next) => {
+  // try to find the posts
+  const posts = await Post.find();
+  // paginate posts
+  const result = paginate(posts);
+  // respond with the posts
+  res.json({ result });
+});
+
+exports.getPost = catchAsync(async (req, res, next) => {
+  // find the post by it's id
+  const post = await Post.findById(req.params.postId);
+  // make sure the post exist
+  if (!post)
+    return next(
+      new ApplicationError('This post is missing from our records', 404)
+    );
+  // populate all comments, and author fields for this post
+  await post.populate('virtualAuthor');
+  // respond to client with post
+  res.json({ post });
+});
+
+exports.createPost = catchAsync(async (req, res, next) => {
+  // create and retieve the post back
+  const post = new Post(req.body);
+  // associate the post to it's auhtor
+  assign({ authorId: req.user.id, slug: slugify(post.title) }, post);
+  // save post to DB
+  await post.save();
+  // respond to client with post
+  res.status(201).json({ post }, 201);
+});
+
+exports.updatePost = catchAsync(async (req, res, next) => {
+  // try to find the post to update
+  const post = await Post.findById(req.params.postId);
+  // if no post is found send a not found error
+  if (!post) {
+    return next(
+      new ApplicationError(
+        'The post you are trying to update was not found',
+        404
+      )
+    );
+  }
+  // check if user is not owner of this post send an error
+  if (!post.authorId.equals(req.user.id)) {
+    return next(
+      new ApplicationError(
+        'You cannot update this post because you are not the owner',
+        401
+      )
+    );
+  }
+  // collect all allowed properties to update
+  const { title, summary, content } = req.body;
+  // perform changes
+  assign({ title, summary, content }, post);
+  // resave changes to DB
+  await post.save();
+  res.json({ post });
+});
 
 exports.removePosts = catchAsync(async (req, res, next) => {
   await Post.deleteMany();
@@ -11,14 +76,14 @@ exports.removePost = catchAsync(async (req, res, next) => {
   // 1. get the post name from req params
   const { postId } = req.params;
   // 2. get the user logged in user id
-  const userId = req.user._id;
+  const userId = req.user.id;
   // 3. find the post to be deleted
   const post = await Post.findById(postId);
   // send error if post does not exist
   if (!post) {
     return next(
       new ApplicationError(
-        "The post you are trying to delete was not found",
+        'The post you are trying to delete was not found',
         404
       )
     );
@@ -37,51 +102,3 @@ exports.removePost = catchAsync(async (req, res, next) => {
   // 6. send a message back acknowledging post delete
   res.status(204).json();
 });
-
-exports.getPosts = catchAsync(async (req, res, next) => {
-  // try to find the posts
-  const posts = await Post.find();
-
-  // paginate posts
-  const result = paginate(posts);
-  console.log(result);
-  // 2. respond with the posts
-  res.json({ result });
-});
-
-exports.getPost = catchAsync(async (req, res, next) => {
-  // 1. get post id from request parameters;
-  const { postId } = req.params;
-  // 2. find the post by it's id
-  const foundPost = await Post.findById(postId).select("-__v");
-  // 3. make sure the post exist
-  if (!foundPost)
-    return next(
-      new ApplicationError("This post is missing from our records", 404)
-    );
-  // populate all comments, and author fields for this post
-  foundPost.populate("author", (err, data) => {
-    if (err)
-      return next(
-        new ApplicationError("Could not populate author for the post")
-      );
-    res.json({ post: foundPost });
-  });
-});
-
-exports.createPost = catchAsync(async (req, res, next) => {
-  // 4. create and retieve the post back
-  const createdPost = new Post(req.body);
-  // 5. associate the post to it's auhtor
-  createdPost.author = req.user.id;
-  // create a tag object for each of the provided tags
-  // tags = validateTags(tags);
-  // insert tags to tags property of post
-  // createdPost.tags.push(...tags);
-  // 6. save post to DB
-  await createdPost.save();
-  // 7. send it to api post author
-  res.status(201).json({ post: createdPost }, 201);
-});
-
-exports.updatePost = catchAsync(async (req, res, next) => {});
